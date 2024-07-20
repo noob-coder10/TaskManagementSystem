@@ -182,9 +182,5 @@ This project is a Task Management System developed using ASP.NET Core Web API. I
 
 
 ## Testing the API
-
-You can test the endpoints from swagger .
-
-
-```
+  - You can test the endpoints from swagger.
 
