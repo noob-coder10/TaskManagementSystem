@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a Task Management System developed using ASP.NET Core Web API. It provides functionalities for managing employees, projects, tasks, notes, and documents, with role-based authentication and authorization for employees, managers, and admins.
+This project is a Task Management System developed using ASP.NET Core Web API. It provides functionalities for managing employees, projects, tasks, notes, and documents, with role-based authentication and authorization for employees, managers and admins.
 
 ## Table of Contents
 - [Features](#features)
