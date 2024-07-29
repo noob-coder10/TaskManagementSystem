@@ -91,15 +91,14 @@ This project is a Task Management System developed using ASP.NET Core Web API. I
 ### Auth
 
 - `/api/auth/login`: POST - Authenticates user and returns JWT token.
-- `/api/auth/register`: POST - Registers a new user.
+- `/api/auth/register`: POST - Registers a new user by Admin.
 
 ### Employee
 
 - `/api/employee`: GET - Retrieves all employees.
 - `/api/employee/{id}`: GET - Retrieves an employee by Id.
-- `/api/employee`: POST - Add an employee by Admin.
 - `/api/employee/{id}`: PUT - Updates employee details.
-- `/api/employee/{id}`: DELETE - Deletes an employee.
+- `/api/employee/{id}`: DELETE - Deletes an employee by Id.
 
 ### Project
 
@@ -112,23 +111,23 @@ This project is a Task Management System developed using ASP.NET Core Web API. I
 
 ### Task
 
-- `/api/task/{projectid}/{requesterid}`: GET - Get all tasks by projectId and requesterId.
+- `/api/task/{projectid}`: GET - Get all tasks by projectId and requesterId.
 - `/api/task`: POST - Creates a new task.
 - `/api/task/{id}`: PUT - Updates task details.
-- `/api/task/{taskid}/{requesterid}`: DELETE - Deletes a task.
+- `/api/task/{taskid}`: DELETE - Deletes a task.
 
 ### Note
 
-- `/api/note/{taskId}/{requesterid}`: GET - Retrieves all notes for a task.
+- `/api/note/{taskId}`: GET - Retrieves all notes for a task.
 - `/api/note`: POST - Adds a new note to a task.
 - `/api/note/{id}`: PUT - Update note details.
-- `/api/note/{taskId}/{requesterid}`: DELETE - Deletes a note from a task.
+- `/api/note/{taskId}`: DELETE - Deletes a note from a task.
 
 ### Document
 
 - `/api/document/{noteid}`: GET - Retrieves all documents attached to a note.
-- `/api/document/upload`: POST - Adds a new document to a note.
-- `/api/document/{documentid}/{requesterid}`: DELETE - Deletes a document from a note.
+- `/api/document/upload/{noteid}`: POST - Adds a new document to a note.
+- `/api/document/{documentid}`: DELETE - Deletes a document from a note.
 
 
 ## Prerequisites
@@ -165,7 +164,7 @@ This project is a Task Management System developed using ASP.NET Core Web API. I
 2. **Apply Migrations**
    - Run the following command to apply the database migrations:
      ```bash
-     cd BookManagementApp
+     cd TaskManagementSystem
      dotnet tool install --global dotnet-ef
      dotnet ef database update
      ```
