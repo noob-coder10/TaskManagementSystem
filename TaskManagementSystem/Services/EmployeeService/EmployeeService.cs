@@ -33,13 +33,17 @@ namespace TaskManagementSystem.Services.EmployeeService
             return employees;
         }
 
-        public async Task<EmployeeDto> GetEmployeeById(int id)
+        public async Task<EmployeeDto> GetEmployeeById(int id, string requesterEmail, string requesterRole)
         {
             var employee = await dbContext.Employees.Include(e => e.Projects).Include(e => e.AssignedTasks).FirstOrDefaultAsync(e => e.EmpId == id);
-
             if (employee == null)
             {
                 throw new NotFoundException("Employee is not found");
+            }
+            if (requesterRole.ToLower() == "employee")
+            {
+                if (requesterEmail.ToLower() != employee.Email.ToLower())
+                    throw new UnauthorizedAccessException("Employee is not authorized to get the requested details");
             }
 
             var employeeDto = mapper.Map<EmployeeDto>(employee);

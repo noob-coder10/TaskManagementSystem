@@ -30,21 +30,15 @@ namespace TaskManagementSystem.Helpers
                             {
                                 Type = "object",
                                 Properties =
-                            {
-                                ["document"] = new OpenApiSchema
                                 {
-                                    Description = "Select file",
-                                    Type = "file",
-                                    Format = "binary"
+                                    ["document"] = new OpenApiSchema
+                                    {
+                                        Description = "Select file",
+                                        Type = "file",
+                                        Format = "binary"
+                                    }
                                 },
-                                ["requestBody"] = new OpenApiSchema
-                                {
-                                    Description = "Request body",
-                                    Type = "string",
-                                    Example = new OpenApiString("{\"NoteId\": 0,\"RequesterId\": 0}")
-                                }
-                            },
-                                Required = new HashSet<string> { "document" , "requestBody" }
+                                Required = new HashSet<string> { "document" }
                             }
                         }
                     }

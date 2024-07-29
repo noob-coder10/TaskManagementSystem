@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TaskManagementSystem.Data;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Models.Domain;
@@ -20,15 +21,13 @@ namespace TaskManagementSystem.Controllers
     [Authorize]
     public class NoteController : ControllerBase
     {
-        private readonly TaskManagementDbContext dbContext;
-        private readonly IMapper mapper;
         private readonly INoteService noteService;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public NoteController(TaskManagementDbContext dbContext, IMapper mapper, INoteService noteService)
+        public NoteController( INoteService noteService, IHttpContextAccessor httpContextAccessor)
         {
-            this.dbContext = dbContext;
-            this.mapper = mapper;
             this.noteService = noteService;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         //Endpoint for adding a new note
@@ -38,8 +37,13 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var response = await noteService.AddNote(addNoteRequestDto);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await noteService.AddNote(addNoteRequestDto, requesterEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -63,8 +67,13 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var response = await noteService.UpdateNote(id, updateNoteRequestDto);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await noteService.UpdateNote(id, updateNoteRequestDto, requesterEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -82,22 +91,23 @@ namespace TaskManagementSystem.Controllers
 
         //Endpoint for deleting a note
         [HttpDelete]
-        [Route("{taskId:int}/{requesterId:int}")]
+        [Route("{taskId:int}")]
         [Authorize(Roles = "Manager, Employee")]
-        public async Task<IActionResult> RemoveNote([FromRoute] int taskId, [FromRoute] int requesterId)
+        public async Task<IActionResult> RemoveNote([FromRoute] int taskId)
         {
             try
             {
-                var response = await noteService.RemoveNote(taskId, requesterId);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await noteService.RemoveNote(taskId, requesterEmail);
                 return Ok(response);
             }
             catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
             }
-            catch (BadHttpRequestException ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return BadRequest(ex.Message);
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {
@@ -107,22 +117,23 @@ namespace TaskManagementSystem.Controllers
 
         //Endpoint for getting a list of all notes of a task
         [HttpGet]
-        [Route("{taskId:int}/{requesterId:int}")]
+        [Route("{taskId:int}")]
         [Authorize(Roles = "Admin, Manager, Employee")]
-        public async Task<IActionResult> GetAllNoteByTaskIdEmpId([FromRoute] int taskId, [FromRoute] int requesterId)
+        public async Task<IActionResult> GetAllNoteByTaskIdEmpId([FromRoute] int taskId)
         {
             try
             {
-                var response = await noteService.GetAllNoteByTaskIdEmpId(taskId, requesterId);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await noteService.GetAllNoteByTaskIdEmpId(taskId, requesterEmail);
                 return Ok(response);
             }
             catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
             }
-            catch (BadHttpRequestException ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return BadRequest(ex.Message);
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {

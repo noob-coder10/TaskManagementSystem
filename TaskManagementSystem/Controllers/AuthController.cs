@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.Models.DTO.EmployeeDto;
@@ -27,8 +28,14 @@ namespace TaskManagementSystem.Controllers
         //Endpoint for registering a user, user can be assigned to three types of roles -> admin, manager and employee
         [HttpPost]
         [Route("Register")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Register([FromBody] AddEmployeeRequestDto addEmployeeRequestDto)
         {
+            var user = await userManager.FindByEmailAsync(addEmployeeRequestDto.EmployeeEmail);
+
+            if (user != null)
+                return BadRequest("This employee email already exists");
+
 
             var identityUser = new IdentityUser
             {
@@ -36,6 +43,7 @@ namespace TaskManagementSystem.Controllers
                 Email = addEmployeeRequestDto.EmployeeEmail
             };
 
+            
             var identityResult = await userManager.CreateAsync(identityUser, addEmployeeRequestDto.EmployeePassword);
 
             if (identityResult.Succeeded)
@@ -56,7 +64,7 @@ namespace TaskManagementSystem.Controllers
 
         }
 
-        //Endpoint for l0gging in a registered user
+        //Endpoint for logging in a registered user
         [HttpPost]
         [Route("Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequestDto)

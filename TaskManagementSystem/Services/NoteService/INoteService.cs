@@ -7,9 +7,9 @@ namespace TaskManagementSystem.Services.NoteService
 {
     public interface INoteService
     {
-        Task<AddNoteRequestDto> AddNote(AddNoteRequestDto addNoteRequestDto);
-        Task<UpdateNoteRequestDto> UpdateNote(int id, UpdateNoteRequestDto updateNoteRequestDto);
-        Task<Note> RemoveNote(int taskId, int requesterId);
-        Task<List<NoteDto>> GetAllNoteByTaskIdEmpId(int taskId, int requesterId);
+        Task<AddNoteRequestDto> AddNote(AddNoteRequestDto addNoteRequestDto, string email);
+        Task<UpdateNoteRequestDto> UpdateNote(int id, UpdateNoteRequestDto updateNoteRequestDto, string email);
+        Task<Note> RemoveNote(int taskId, string email);
+        Task<List<NoteDto>> GetAllNoteByTaskIdEmpId(int taskId, string email);
     }
 }

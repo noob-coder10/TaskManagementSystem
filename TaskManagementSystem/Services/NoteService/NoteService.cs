@@ -18,19 +18,21 @@ namespace TaskManagementSystem.Services.NoteService
             this.mapper = mapper;
         }
 
-        public async Task<AddNoteRequestDto> AddNote(AddNoteRequestDto addNoteRequestDto)
+        public async Task<AddNoteRequestDto> AddNote(AddNoteRequestDto addNoteRequestDto, string email)
         {
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
             var task = await dbContext.Tasks.Include(t => t.Project).Include(t => t.AssignedTo).FirstOrDefaultAsync(t => t.TaskId == addNoteRequestDto.TaskId);
 
             if (task == null)
                 throw new NotFoundException("Task id is not valid");
 
-            if (task.AssignedTo.EmpId != addNoteRequestDto.CreatedByEmpId && task.Project.ManagerId != addNoteRequestDto.CreatedByEmpId)
-                throw new BadHttpRequestException("You are not authorized to create a note in this task");
+            if (requester == null || (task.AssignedTo.EmpId != requester.EmpId && task.Project.ManagerId != requester.EmpId))
+                throw new UnauthorizedAccessException("You are not authorized to create a note in this task");
 
             var note = mapper.Map<Note>(addNoteRequestDto);
 
             note.CreatedAt = DateTime.UtcNow;
+            note.CreatedByEmpId = requester.EmpId;
 
             note.Task = task;
 
@@ -41,15 +43,16 @@ namespace TaskManagementSystem.Services.NoteService
             return addNoteRequestDto;
         }
 
-        public async Task<List<NoteDto>> GetAllNoteByTaskIdEmpId(int taskId, int requesterId)
+        public async Task<List<NoteDto>> GetAllNoteByTaskIdEmpId(int taskId, string email)
         {
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
             var task = await dbContext.Tasks.Include(t => t.Project).Include(t => t.AssignedTo).FirstOrDefaultAsync(t => t.TaskId == taskId);
 
             if (task == null)
                 throw new NotFoundException("Task id is not valid");
 
-            if (task.Project.ManagerId != requesterId && task.AssignedTo.EmpId != requesterId)
-                throw new BadHttpRequestException("You are not authorized to view these notes");
+            if (requester == null || (task.Project.ManagerId != requester.EmpId && task.AssignedTo.EmpId != requester.EmpId))
+                throw new UnauthorizedAccessException("You are not authorized to view these notes");
 
             var notes = dbContext.Notes.Include(n => n.Task).Include(n => n.Task.Project)
                                         .Where(n => n.Task.TaskId == taskId)
@@ -68,15 +71,16 @@ namespace TaskManagementSystem.Services.NoteService
             return notesDto;
         }
 
-        public async Task<Note> RemoveNote(int taskId, int requesterId)
+        public async Task<Note> RemoveNote(int taskId, string email)
         {
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
             var note = await dbContext.Notes.FindAsync(taskId);
 
             if (note == null)
                 throw new NotFoundException("Note is not found");
 
-            if (note.CreatedByEmpId != requesterId)
-                throw new BadHttpRequestException("You are not authorized to delete this note");
+            if (requester != null || note.CreatedByEmpId != requester.EmpId)
+                throw new UnauthorizedAccessException("You are not authorized to delete this note");
 
             dbContext.Remove(note);
             await dbContext.SaveChangesAsync();
@@ -84,15 +88,16 @@ namespace TaskManagementSystem.Services.NoteService
             return note;
         }
 
-        public async Task<UpdateNoteRequestDto> UpdateNote(int id, UpdateNoteRequestDto updateNoteRequestDto)
+        public async Task<UpdateNoteRequestDto> UpdateNote(int id, UpdateNoteRequestDto updateNoteRequestDto, string email)
         {
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
             var note = await dbContext.Notes.FindAsync(id);
 
             if (note == null)
                 throw new NotFoundException("Note is not found");
 
-            if (note.CreatedByEmpId != updateNoteRequestDto.CreatedByEmpId)
-                throw new BadHttpRequestException("You are not authorized to modify this note");
+            if (requester == null || note.CreatedByEmpId != requester.EmpId)
+                throw new UnauthorizedAccessException("You are not authorized to modify this note");
 
             note.Description = updateNoteRequestDto.Description;
             note.CreatedAt = DateTime.UtcNow;

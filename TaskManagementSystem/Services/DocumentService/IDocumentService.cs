@@ -7,8 +7,8 @@ namespace TaskManagementSystem.Services.DocumentService
 {
     public interface IDocumentService
     {
-        Task<Document> UploadDocument(AddDocumentRequestDto addDocumentRequestDto);
-        Task<Document> RemoveDocument(int documentId, int requesterId);
+        Task<Document> UploadDocument(IFormFile document, int noteId, string email);
+        Task<Document> RemoveDocument(int documentId, string email);
         Task<List<DocumentDto>> GetAllDocumentByNoteId(int noteId);
     }
 }

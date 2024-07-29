@@ -41,13 +41,11 @@ namespace TaskManagementSystem.Mappings
             CreateMap<Project, AddProjectRequestDto>().ForMember(x => x.ProjectStartDate, y => y.MapFrom(z => z.StartDate))
                                                   .ForMember(x => x.ProjectEndDate, y => y.MapFrom(z => z.EndDate))
                                                   .ForMember(x => x.ProjectStatus, y => y.MapFrom(z => z.Status))
-                                                  .ForMember(x => x.ProjectManagerId, y => y.MapFrom(z => z.ManagerId))
                                                   .ReverseMap();
 
             CreateMap<Project, UpdateProjectRequestDto>().ForMember(x => x.ProjectStartDate, y => y.MapFrom(z => z.StartDate))
                                                   .ForMember(x => x.ProjectEndDate, y => y.MapFrom(z => z.EndDate))
                                                   .ForMember(x => x.ProjectStatus, y => y.MapFrom(z => z.Status))
-                                                  .ForMember(x => x.ProjectManagerId, y => y.MapFrom(z => z.ManagerId))
                                                   .ReverseMap();
 
             CreateMap<Models.Domain.Task, ProjectTaskDto>().ForMember(x => x.TaskTitle, y => y.MapFrom(z => z.Title))

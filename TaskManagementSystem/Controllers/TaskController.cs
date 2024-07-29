@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using TaskManagementSystem.Data;
 using TaskManagementSystem.Exceptions;
@@ -21,10 +22,12 @@ namespace TaskManagementSystem.Controllers
     public class TaskController : ControllerBase
     {
         private readonly ITaskService taskService;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public TaskController(ITaskService taskService)
+        public TaskController(ITaskService taskService, IHttpContextAccessor httpContextAccessor)
         {
             this.taskService = taskService;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         //Endpoint for adding a new task
@@ -34,8 +37,13 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var response = await taskService.AddTask(addTaskRequestDto);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await taskService.AddTask(addTaskRequestDto, requesterEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -59,8 +67,13 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var response = await taskService.UpdateTask(id, updateTaskRequestDto);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await taskService.UpdateTask(id, updateTaskRequestDto, requesterEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -78,14 +91,20 @@ namespace TaskManagementSystem.Controllers
 
         //Endpoint for removing a task
         [HttpDelete]
-        [Route("{taskId:int}/{requesterId:int}")]
+        [Route("{taskId:int}")]
         [Authorize(Roles = "Manager")]
-        public async Task<IActionResult> RemoveTask([FromRoute] int taskId, [FromRoute] int requesterId)
+        public async Task<IActionResult> RemoveTask([FromRoute] int taskId)
         {
             try
             {
-                var response = await taskService.RemoveTask(taskId, requesterId);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                
+                var response = await taskService.RemoveTask(taskId, requesterEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -103,14 +122,19 @@ namespace TaskManagementSystem.Controllers
 
         //Endpoint for getting a list of all tasks of a project assigned to an employee
         [HttpGet]
-        [Route("{projectId:Guid}/{requesterId:int}")]
+        [Route("{projectId:Guid}")]
         [Authorize(Roles = "Admin, Manager, Employee")]
-        public async Task<IActionResult> GetAllTaskByProjectIdEmpId([FromRoute] Guid projectId, [FromRoute] int requesterId)
+        public async Task<IActionResult> GetAllTaskByProjectIdEmpId([FromRoute] Guid projectId)
         {
             try
             {
-                var response = await taskService.GetAllTaskByProjectIdEmpId(projectId, requesterId);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await taskService.GetAllTaskByProjectIdEmpId(projectId, requesterEmail);
                 return Ok(response);
+            }
+            catch (BadHttpRequestException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {

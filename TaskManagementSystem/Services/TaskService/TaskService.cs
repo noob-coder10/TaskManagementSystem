@@ -17,15 +17,16 @@ namespace TaskManagementSystem.Services.TaskService
             this.dbContext = dbContext;
             this.mapper = mapper;
         }
-        public async Task<AddTaskRequestDto> AddTask(AddTaskRequestDto addTaskRequestDto)
+        public async Task<AddTaskRequestDto> AddTask(AddTaskRequestDto addTaskRequestDto, string email)
         {
             var project = await dbContext.Projects.FindAsync(addTaskRequestDto.ProjectId);
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
 
             if (project == null)
                 throw new NotFoundException("Project Id is not valid");
 
-            if (project.ManagerId != addTaskRequestDto.CreatedByManagerId)
-                throw new BadHttpRequestException("You are not authorized to assign a task");
+            if (requester == null || project.ManagerId != requester.EmpId)
+                throw new UnauthorizedAccessException("You are not authorized to assign a task");
 
             var assignedTo = await dbContext.Employees.Include(em => em.Projects).FirstOrDefaultAsync(emp => emp.EmpId == addTaskRequestDto.AssignedToEmpId);
 
@@ -35,25 +36,29 @@ namespace TaskManagementSystem.Services.TaskService
             if (assignedTo.Projects.FirstOrDefault(project => project.ProjectId == addTaskRequestDto.ProjectId) == null)
                 throw new BadHttpRequestException("Assigned to employee is not part of this project");
 
-            if (addTaskRequestDto.DueDate < addTaskRequestDto.CreatedAt)
+            if (addTaskRequestDto.DueDate < DateTime.UtcNow)
                 throw new BadHttpRequestException("Please provide a valid due date");
 
             var task = mapper.Map<Models.Domain.Task>(addTaskRequestDto);
 
             task.Project = project;
             task.AssignedTo = assignedTo;
-
+            task.CreatedAt = DateTime.UtcNow;
             await dbContext.Tasks.AddAsync(task);
             await dbContext.SaveChangesAsync();
 
             return addTaskRequestDto;
         }
 
-        public async Task<List<TaskDto>> GetAllTaskByProjectIdEmpId(Guid projectId, int requesterId)
+        public async Task<List<TaskDto>> GetAllTaskByProjectIdEmpId(Guid projectId, string email)
         {
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
+            if (requester == null)
+                throw new BadHttpRequestException("Requester is not found");
+
             var tasks = dbContext.Tasks.Include(t => t.Project)
                                         .Include(t => t.AssignedTo)
-                                        .Where(t => t.Project.ProjectId == projectId && t.AssignedTo.EmpId == requesterId)
+                                        .Where(t => t.Project.ProjectId == projectId && t.AssignedTo.EmpId == requester.EmpId)
                                         .ToList();
             var tasksDto = new List<TaskDto>();
             foreach (var task in tasks)
@@ -64,15 +69,17 @@ namespace TaskManagementSystem.Services.TaskService
             return tasksDto;
         }
 
-        public async Task<Models.Domain.Task> RemoveTask(int taskId, int requesterId)
+        public async Task<Models.Domain.Task> RemoveTask(int taskId, string email)
         {
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
+
             var task = await dbContext.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.TaskId == taskId);
 
             if (task == null)
                 throw new NotFoundException("Task is not found");
 
-            if (task.Project.ManagerId != requesterId)
-                throw new BadHttpRequestException("You are not authorized to remove this task");
+            if (requester == null || task.Project.ManagerId != requester.EmpId)
+                throw new UnauthorizedAccessException("You are not authorized to remove this task");
 
             dbContext.Remove(task);
             await dbContext.SaveChangesAsync();
@@ -80,8 +87,10 @@ namespace TaskManagementSystem.Services.TaskService
             return task;
         }
 
-        public async Task<UpdateTaskRequestDto> UpdateTask(int id, UpdateTaskRequestDto updateTaskRequestDto)
+        public async Task<UpdateTaskRequestDto> UpdateTask(int id, UpdateTaskRequestDto updateTaskRequestDto, string email)
         {
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
+
             var task = await dbContext.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.TaskId == id);
             if (task == null)
                 throw new NotFoundException("Task is not found");
@@ -94,8 +103,8 @@ namespace TaskManagementSystem.Services.TaskService
             if (task.Project.ProjectId != updateTaskRequestDto.ProjectId)
                 throw new BadHttpRequestException("This task is not part of this project");
 
-            if (project.ManagerId != updateTaskRequestDto.ModifiedByManagerId)
-                throw new BadHttpRequestException("You are not authorized to modify this task");
+            if (requester == null || project.ManagerId != requester.EmpId)
+                throw new UnauthorizedAccessException("You are not authorized to modify this task");
 
             var taskDomain = mapper.Map<Models.Domain.Task>(updateTaskRequestDto);
 

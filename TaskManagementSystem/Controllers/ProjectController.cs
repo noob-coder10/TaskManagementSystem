@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using TaskManagementSystem.Data;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Models.Domain;
@@ -17,14 +18,15 @@ namespace TaskManagementSystem.Controllers
     //Controller for querying, adding, updating and deleting Project entity
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class ProjectController : ControllerBase
     {
         private readonly IProjectService projectService;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public ProjectController(IProjectService projectService)
+        public ProjectController(IProjectService projectService, IHttpContextAccessor httpContextAccessor)
         {
             this.projectService = projectService;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         //Endpoint for adding a new project entity
@@ -34,8 +36,13 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var response = await projectService.AddProject(addProjectRequestDto);
+                var managerEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await projectService.AddProject(addProjectRequestDto, managerEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -71,13 +78,18 @@ namespace TaskManagementSystem.Controllers
         //Endpoint for updating an existing project details
         [HttpPut]
         [Route("{id:Guid}")]
-        [Authorize(Roles = "Manager, Employee")]
+        [Authorize(Roles = "Manager")]
         public async Task<IActionResult> UpdateProject([FromRoute] Guid id, [FromBody] UpdateProjectRequestDto updateProjectRequestDto)
         {
             try
             {
-                var response = await projectService.UpdateProject(id, updateProjectRequestDto);
+                var managerEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await projectService.UpdateProject(id, updateProjectRequestDto, managerEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -101,8 +113,13 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var response = await projectService.RemoveProject(id);
+                var managerEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await projectService.RemoveProject(id, managerEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -122,8 +139,13 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var response = await projectService.AddProjectMember(projectMemberRequestDto);
+                var managerEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await projectService.AddProjectMember(projectMemberRequestDto, managerEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -147,8 +169,13 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var response = await projectService.RemoveProjectMember(projectMemberRequestDto);
+                var managerEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await projectService.RemoveProjectMember(projectMemberRequestDto, managerEmail);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {

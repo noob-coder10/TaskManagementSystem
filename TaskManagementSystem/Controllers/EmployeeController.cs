@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TaskManagementSystem.Data;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Models.Domain;
@@ -14,19 +15,20 @@ namespace TaskManagementSystem.Controllers
     //Controller for querying, adding, updating and deleting Employee entity
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class EmployeeController : ControllerBase
     {
         private readonly IEmployeeService employeeService;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public EmployeeController(IEmployeeService employeeService)
+        public EmployeeController(IEmployeeService employeeService, IHttpContextAccessor httpContextAccessor)
         {
             this.employeeService = employeeService;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         //Endpoint for getting a list of all employees
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Manager")]
         public async Task<IActionResult> GetAllEmployees()
         {
             try
@@ -48,8 +50,14 @@ namespace TaskManagementSystem.Controllers
         {
             try
             {
-                var employee = await employeeService.GetEmployeeById(id);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var requesterRole = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Role);
+                var employee = await employeeService.GetEmployeeById(id, requesterEmail, requesterRole);
                 return Ok(employee);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (NotFoundException ex)
             {
@@ -62,22 +70,6 @@ namespace TaskManagementSystem.Controllers
 
         }
 
-        //Endpoint for adding a new employee entity
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AddEmployee([FromBody] AddEmployeeRequestDto addEmployeeRequestDto)
-        {
-            try
-            {
-                var response = await employeeService.AddEmployee(addEmployeeRequestDto);
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
-        }
 
         //Endpoint for updating an existing employee details
         [HttpPut]

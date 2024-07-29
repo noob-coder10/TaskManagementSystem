@@ -33,15 +33,16 @@ namespace TaskManagementSystem.Services.DocumentService
             return documentsDto;
         }
 
-        public async Task<Document> RemoveDocument(int documentId, int requesterId)
+        public async Task<Document> RemoveDocument(int documentId, string email)
         {
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
             var document = await dbContext.Documents.Include(d => d.Note).FirstOrDefaultAsync(d => d.DocumentId == documentId);
 
             if (document == null)
                 throw new NotFoundException("Document is not found");
 
-            if (document.Note.CreatedByEmpId != requesterId)
-                throw new BadHttpRequestException("You are not authorized to remove this document from this note");
+            if (requester == null || document.Note.CreatedByEmpId != requester.EmpId)
+                throw new UnauthorizedAccessException("You are not authorized to remove this document from this note");
 
             if (System.IO.File.Exists(document.DocumentPath))
                 System.IO.File.Delete(document.DocumentPath);
@@ -52,27 +53,21 @@ namespace TaskManagementSystem.Services.DocumentService
             return document;
         }
 
-        public async Task<Document> UploadDocument(AddDocumentRequestDto addDocumentRequestDto)
+        public async Task<Document> UploadDocument(IFormFile document, int noteId, string email)
         {
-            JsonDocument json = JsonDocument.Parse(addDocumentRequestDto.RequestBody);
-            JsonElement root = json.RootElement;
-
-            int noteId = root.GetProperty("NoteId").GetInt32();
-            int requesterId = root.GetProperty("RequesterId").GetInt32();
-
+            var requester = await dbContext.Employees.FirstOrDefaultAsync(e => e.Email == email);
 
             var note = await dbContext.Notes.FindAsync(noteId);
             if (note == null)
                 throw new NotFoundException("Note is not found");
 
 
-            if (note.CreatedByEmpId != requesterId)
-                throw new BadHttpRequestException("You are not authorized to upload a document in this note");
+            if (requester == null || note.CreatedByEmpId != requester.EmpId)
+                throw new UnauthorizedAccessException("You are not authorized to upload a document in this note");
 
-            var document = addDocumentRequestDto.Document;
             if (document == null || document.Length == 0)
             {
-                throw new BadHttpRequestException("No file uploaded.");
+                throw new BadHttpRequestException("No file uploaded");
             }
             var fileName = Path.GetFileNameWithoutExtension(document.FileName);
             var fileExt = Path.GetExtension(document.FileName);

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 using System.Text.Json;
 using TaskManagementSystem.Data;
 using TaskManagementSystem.Exceptions;
@@ -21,25 +22,32 @@ namespace TaskManagementSystem.Controllers
     public class DocumentController : ControllerBase
     {
         private readonly IDocumentService documentService;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public DocumentController(IDocumentService documentService)
+        public DocumentController(IDocumentService documentService, IHttpContextAccessor httpContextAccessor)
         {
             this.documentService = documentService;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         //Endpoint for uploading a document under a note
-        [HttpPost("upload")]
+        [HttpPost("upload/{noteId:int}")]
         [Authorize(Roles = "Manager, Employee")]
-        public async Task<IActionResult> UploadDocument([FromForm] AddDocumentRequestDto addDocumentRequestDto)
+        public async Task<IActionResult> UploadDocument([FromForm] IFormFile document, [FromRoute] int noteId)
         {
             try
             {
-                var response = await documentService.UploadDocument(addDocumentRequestDto);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await documentService.UploadDocument(document, noteId, requesterEmail);
                 return Ok(response);
             }
             catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (BadHttpRequestException ex)
             {
@@ -53,22 +61,23 @@ namespace TaskManagementSystem.Controllers
 
         //Endpoint for removing an uploaded document
         [HttpDelete]
-        [Route("{documentId:int}/{requesterId:int}")]
+        [Route("{documentId:int}")]
         [Authorize(Roles = "Manager, Employee")]
-        public async Task<IActionResult> RemoveDocument([FromRoute] int documentId, [FromRoute] int requesterId)
+        public async Task<IActionResult> RemoveDocument([FromRoute] int documentId)
         {
             try
             {
-                var response = await documentService.RemoveDocument(documentId, requesterId);
+                var requesterEmail = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                var response = await documentService.RemoveDocument(documentId, requesterEmail);
                 return Ok(response);
             }
             catch (NotFoundException ex)
             {
                 return NotFound(ex.Message);
             }
-            catch (BadHttpRequestException ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return BadRequest(ex.Message);
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {

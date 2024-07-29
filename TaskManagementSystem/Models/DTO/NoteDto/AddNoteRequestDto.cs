@@ -6,6 +6,5 @@
 
         public int TaskId { get; set; }
 
-        public int CreatedByEmpId { get; set; }
     }
 }

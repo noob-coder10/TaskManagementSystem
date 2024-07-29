@@ -59,9 +59,8 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddDbContext<TaskManagementDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagementConnectionString")));
 builder.Services.AddDbContext<TaskManagementAuthDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("TaskManagementAuthConnectionString")));
-
+builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<FileUpload>(builder.Configuration.GetSection("FileUpload"));
-
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITaskService, TaskService>();

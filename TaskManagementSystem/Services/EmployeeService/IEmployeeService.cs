@@ -7,7 +7,7 @@ namespace TaskManagementSystem.Services.EmployeeService
     public interface IEmployeeService
     {
         Task<List<Employee>> GetAllEmployees();
-        Task<EmployeeDto> GetEmployeeById(int id);
+        Task<EmployeeDto> GetEmployeeById(int id, string email, string role);
         Task<AddEmployeeRequestDto> AddEmployee(AddEmployeeRequestDto addEmployeeRequestDto);
         Task<UpdateEmployeeRequestDto> UpdateEmployee(int id, UpdateEmployeeRequestDto updateEmployeeRequestDto);
         Task<Employee> RemoveEmployee(int id);

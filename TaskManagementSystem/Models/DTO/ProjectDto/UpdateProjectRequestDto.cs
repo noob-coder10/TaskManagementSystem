@@ -8,6 +8,5 @@
         public DateTime? ProjectEndDate { get; set; }
         public string? ProjectStatus { get; set; }
 
-        public int? ProjectManagerId { get; set; }
     }
 }

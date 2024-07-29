@@ -7,9 +7,9 @@ namespace TaskManagementSystem.Services.TaskService
 {
     public interface ITaskService
     {
-        Task<AddTaskRequestDto> AddTask(AddTaskRequestDto addTaskRequestDto);
-        Task<UpdateTaskRequestDto> UpdateTask(int id, UpdateTaskRequestDto updateTaskRequestDto);
-        Task<Models.Domain.Task> RemoveTask(int taskId, int requesterId);
-        Task<List<TaskDto>> GetAllTaskByProjectIdEmpId(Guid projectId, int requesterId);
+        Task<AddTaskRequestDto> AddTask(AddTaskRequestDto addTaskRequestDto, string requester);
+        Task<UpdateTaskRequestDto> UpdateTask(int id, UpdateTaskRequestDto updateTaskRequestDto, string requester);
+        Task<Models.Domain.Task> RemoveTask(int taskId, string requester);
+        Task<List<TaskDto>> GetAllTaskByProjectIdEmpId(Guid projectId, string requester);
     }
 }
